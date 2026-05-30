@@ -3,7 +3,7 @@ import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # ----------------------------
-# Configuration
+# PAGE CONFIG
 # ----------------------------
 st.set_page_config(
     page_title="Blood Work Analyzer",
@@ -11,14 +11,17 @@ st.set_page_config(
     layout="wide"
 )
 
+# ----------------------------
+# LOAD ENVIRONMENT
+# ----------------------------
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
-    model="gemma-4-31b-it"
+    model="gemini-2.5-flash"
 )
 
 # ----------------------------
-# Custom CSS
+# CUSTOM CSS
 # ----------------------------
 st.markdown("""
 <style>
@@ -32,60 +35,48 @@ st.markdown("""
     line-height: 1.6;
 }
 
-.section-card {
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #333;
-    background-color: #111;
-}
-
-.big-title {
+.title {
     text-align: center;
-    margin-bottom: 0px;
 }
 
 .subtitle {
     text-align: center;
-    color: #b0b0b0;
-    margin-bottom: 25px;
+    color: gray;
+    margin-bottom: 20px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# Header
+# HEADER
 # ----------------------------
 st.markdown(
-    "<h1 class='big-title'>🩺 Blood Work Analyzer</h1>",
+    "<h1 class='title'>🩺 Blood Work Analyzer</h1>",
     unsafe_allow_html=True
 )
 
 st.markdown(
-    "<p class='subtitle'>Understand your blood test results with AI-powered health insights and Indian diet recommendations.</p>",
+    "<p class='subtitle'>Get a quick health summary and diet recommendations from your blood report.</p>",
     unsafe_allow_html=True
 )
 
 # ----------------------------
-# Disclaimer
+# DISCLAIMER
 # ----------------------------
 st.warning(
     """
-    ⚠️ **Important Disclaimer**
-
-    This tool provides AI-generated educational insights only.
-    It is NOT a medical diagnosis and should not replace professional medical advice.
-
-    Please consult a qualified healthcare professional before making any medical decisions.
+    ⚠️ This tool provides educational insights only.
+    It is not a substitute for professional medical advice, diagnosis, or treatment.
     """
 )
 
 # ----------------------------
-# Layout
+# LAYOUT
 # ----------------------------
 left_col, right_col = st.columns([1, 1])
 
 # ----------------------------
-# LEFT SIDE
+# LEFT COLUMN
 # ----------------------------
 with left_col:
 
@@ -93,12 +84,12 @@ with left_col:
 
     st.info(
         """
-        Paste your complete blood report below.
+        Paste your complete blood report.
 
         Include:
-        - Test names
-        - Measured values
-        - Reference ranges
+        • Test names
+        • Test values
+        • Reference ranges
 
         The more complete the report, the more accurate the analysis.
         """
@@ -121,7 +112,7 @@ Fasting Blood Sugar: 112 mg/dL (Reference: 70 - 100)
         value=st.session_state.get("blood_report", ""),
         height=500,
         placeholder="""
-Paste your blood report here...
+Paste your blood report here.
 
 Example:
 
@@ -130,7 +121,8 @@ Vitamin D: 18 ng/mL (Reference: 30 - 100)
 Total Cholesterol: 240 mg/dL (Reference: <200)
 HDL Cholesterol: 35 mg/dL (Reference: >40)
 Triglycerides: 190 mg/dL (Reference: <150)
-        """
+Fasting Blood Sugar: 112 mg/dL (Reference: 70 - 100)
+"""
     )
 
     analyze_clicked = st.button(
@@ -140,7 +132,7 @@ Triglycerides: 190 mg/dL (Reference: <150)
     )
 
 # ----------------------------
-# RIGHT SIDE
+# RIGHT COLUMN
 # ----------------------------
 with right_col:
 
@@ -151,20 +143,20 @@ with right_col:
     health_box.markdown(
         """
         <div class="scroll-box">
-        Analysis will appear here after you click Analyze.
+        Your health summary will appear here.
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    st.subheader("🥗 Recommended Indian Diet Plan")
+    st.subheader("🥗 Diet & Lifestyle Recommendations")
 
     diet_box = st.empty()
 
     diet_box.markdown(
         """
         <div class="scroll-box">
-        Personalized dietary recommendations will appear here.
+        Diet recommendations will appear here.
         </div>
         """,
         unsafe_allow_html=True
@@ -177,28 +169,25 @@ if analyze_clicked:
 
     if not blood_report.strip():
 
-        st.error(
-            "Please paste your blood report before clicking Analyze."
-        )
+        st.error("Please paste your blood report before analyzing.")
 
     else:
 
         with st.spinner("🔬 Analyzing blood report..."):
 
             # ----------------------------
-            # Step 1: Extract Values
+            # STEP 1: Extract Abnormal Values
             # ----------------------------
             extraction_prompt = f"""
-You are a medical data extraction assistant.
+You are a medical report analyzer.
 
-Analyze the blood report and identify every test result.
+Identify ONLY abnormal values.
 
-For each test provide:
+For each abnormal value provide:
 
 - Test Name
-- Result Value
-- Status (HIGH / LOW / NORMAL)
-- Reference Range
+- Value
+- Status (HIGH or LOW)
 
 Blood Report:
 
@@ -206,36 +195,52 @@ Blood Report:
 """
 
             extraction_response = llm.invoke(extraction_prompt)
-
             extracted_values = extraction_response.content
 
             # ----------------------------
-            # Step 2: Generate Summary
+            # STEP 2: Generate Summary
             # ----------------------------
             summary_prompt = f"""
-You are an experienced clinical nutritionist.
+You are a clinical nutritionist.
 
-Based on the blood report analysis below, generate two sections.
+Respond EXACTLY in the following format.
 
 SECTION 1 - HEALTH SUMMARY
 
-- Explain the patient's overall health in simple language.
-- Mention major abnormalities.
-- Explain possible implications.
-- Keep it easy to understand.
+Overall Status:
+[One sentence]
 
-SECTION 2 - INDIAN DIET PLAN
+Abnormal Findings:
+• Finding 1
+• Finding 2
+• Finding 3
 
-Provide:
+Key Concern:
+[One sentence]
 
-Foods to Eat More:
-- Bullet points
+SECTION 2 - DIET PLAN
 
-Foods to Reduce/Avoid:
-- Bullet points
+✅ Eat More:
+• Food 1
+• Food 2
+• Food 3
 
-Lifestyle Suggestions:
-- Bullet points
+❌ Reduce:
+• Food 1
+• Food 2
+• Food 3
+
+🏃 Lifestyle:
+• Suggestion 1
+• Suggestion 2
+
+Rules:
+- Maximum 100 words.
+- Keep everything concise.
+- No long explanations.
+- No medical jargon.
+- Use common Indian foods.
+- Use bullet points only.
 
 Blood Analysis:
 
@@ -244,51 +249,52 @@ Blood Analysis:
 
             summary_response = llm.invoke(summary_prompt)
 
-            full_response = summary_response.content
+            result = summary_response.content
 
         # ----------------------------
-        # Split Sections
+        # SPLIT RESPONSE
         # ----------------------------
-        if "SECTION 2" in full_response:
+        if "SECTION 2" in result:
 
-            parts = full_response.split("SECTION 2")
+            sections = result.split("SECTION 2")
 
             health_summary = (
-                parts[0]
+                sections[0]
                 .replace("SECTION 1 - HEALTH SUMMARY", "")
-                .replace("SECTION 1", "")
                 .strip()
             )
 
             diet_plan = (
-                parts[1]
-                .replace("- INDIAN DIET PLAN", "")
-                .strip()
+                "SECTION 2" + sections[1]
             )
 
         else:
 
-            health_summary = full_response
-            diet_plan = full_response
+            health_summary = result
+            diet_plan = ""
 
         # ----------------------------
-        # Display Results
+        # DISPLAY RESULTS
         # ----------------------------
         health_box.markdown(
             f"""
-            <div class="scroll-box">
-            {health_summary}
-            </div>
-            """,
+<div class="scroll-box">
+
+{health_summary}
+
+</div>
+""",
             unsafe_allow_html=True
         )
 
         diet_box.markdown(
             f"""
-            <div class="scroll-box">
-            {diet_plan}
-            </div>
-            """,
+<div class="scroll-box">
+
+{diet_plan}
+
+</div>
+""",
             unsafe_allow_html=True
         )
 
