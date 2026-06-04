@@ -1,4 +1,4 @@
-# 🛒 Project 10: AI Shopping Assistant
+AI Shopping Assistant
 
 An intelligent, conversational AI Shopping Assistant powered by **LangChain** and **Groq LLMs**. It enables users to search for products, view ratings, and place orders using either natural language text queries or by uploading a product image (multimodal search).
 
